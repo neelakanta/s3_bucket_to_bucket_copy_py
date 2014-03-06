@@ -34,6 +34,8 @@ class Worker(threading.Thread):
         threading.Thread.__init__(self)
         self.queue = queue
         self.done_count = 0
+        self.copy_count = 0
+        self.exist_count = 0
         self.thread_id = thread_id
         self.aws_key = aws_key
         self.aws_secret_key = aws_secret_key
@@ -59,18 +61,23 @@ class Worker(threading.Thread):
                 key_name = self.queue.get()
                 k = self.src_bucket.get_key(key_name)
                 dist_key = self.dest_bucket.get_key(k.key)
-                if not dist_key or not dist_key.exists() or k.etag != dist_key.etag:
+                #if not dist_key or not dist_key.exists() or k.etag != dist_key.etag:
+                if not dist_key or not dist_key.exists():
                     print '  t%s: Copy: %s' % (self.thread_id, k.key)
                     self.dest_bucket.copy_key(k.key, self.src_bucket_name, k.key, preserve_acl=true, encrypt_key=true)
                     # acl = self.src_bucket.get_acl(k)
                     #self.dest_bucket.copy_key(k.key, self.src_bucket_name, k.key, storage_class=k.storage_class)
                     #dist_key = self.dest_bucket.get_key(k.key)
                     #dist_key.set_acl(acl)
+                    self.copy_count += 1
                 else:
-                    print '  t%s: Exists and etag matches: %s' % (self.thread_id, k.key)
+                    self.exist_count += 1
+                    #print '  t%s: Exists and etag matches: %s' % (self.thread_id, k.key)
                 self.done_count += 1
             except BaseException:
                 logging.exception('  t%s: error during copy' % self.thread_id)
+            if (self.done_count % 100 == 0):
+                    print '  t%s (%s): %s done %s copied %s exists: %s' % (self.thread_id, self.src_path, self.done_count, self.copy_count, self.exist_count)
             self.queue.task_done()
 
 
