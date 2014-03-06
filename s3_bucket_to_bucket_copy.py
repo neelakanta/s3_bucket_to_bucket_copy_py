@@ -48,7 +48,7 @@ class Worker(threading.Thread):
         self.dest_bucket = None
 
     def __init_s3(self):
-        print '  t%s: conn to s3' % self.thread_id
+        #print '  t%s: conn to s3' % self.thread_id
         self.conn = S3Connection(self.aws_key, self.aws_secret_key)
         self.src_bucket = self.conn.get_bucket(self.src_bucket_name)
         self.dest_bucket = self.conn.get_bucket(self.dst_bucket_name)
@@ -64,7 +64,7 @@ class Worker(threading.Thread):
                 #if not dist_key or not dist_key.exists() or k.etag != dist_key.etag:
                 if not dist_key or not dist_key.exists():
                     print '  t%s: Copy: %s' % (self.thread_id, k.key)
-                    self.dest_bucket.copy_key(k.key, self.src_bucket_name, k.key, preserve_acl=true, encrypt_key=true)
+                    self.dest_bucket.copy_key(k.key, self.src_bucket_name, k.key, preserve_acl=True, encrypt_key=True)
                     # acl = self.src_bucket.get_acl(k)
                     #self.dest_bucket.copy_key(k.key, self.src_bucket_name, k.key, storage_class=k.storage_class)
                     #dist_key = self.dest_bucket.get_key(k.key)
@@ -77,7 +77,7 @@ class Worker(threading.Thread):
             except BaseException:
                 logging.exception('  t%s: error during copy' % self.thread_id)
             if (self.done_count % 100 == 0):
-                    print '  t%s (%s): %s done %s copied %s exists: %s' % (self.thread_id, self.src_path, self.done_count, self.copy_count, self.exist_count)
+                    print '  t%s (%s): done=%s copied=%s exists=%s' % (self.thread_id, self.src_path, self.done_count, self.copy_count, self.exist_count)
             self.queue.task_done()
 
 
