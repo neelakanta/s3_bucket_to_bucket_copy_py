@@ -61,10 +61,11 @@ class Worker(threading.Thread):
                 dist_key = self.dest_bucket.get_key(k.key)
                 if not dist_key or not dist_key.exists() or k.etag != dist_key.etag:
                     print '  t%s: Copy: %s' % (self.thread_id, k.key)
-                    acl = self.src_bucket.get_acl(k)
-                    self.dest_bucket.copy_key(k.key, self.src_bucket_name, k.key, storage_class=k.storage_class)
-                    dist_key = self.dest_bucket.get_key(k.key)
-                    dist_key.set_acl(acl)
+                    self.dest_bucket.copy_key(k.key, self.src_bucket_name, k.key, preserve_acl=true, encrypt_key=true)
+                    # acl = self.src_bucket.get_acl(k)
+                    #self.dest_bucket.copy_key(k.key, self.src_bucket_name, k.key, storage_class=k.storage_class)
+                    #dist_key = self.dest_bucket.get_key(k.key)
+                    #dist_key.set_acl(acl)
                 else:
                     print '  t%s: Exists and etag matches: %s' % (self.thread_id, k.key)
                 self.done_count += 1
