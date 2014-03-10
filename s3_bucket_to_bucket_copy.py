@@ -2,6 +2,30 @@
 # encoding: utf-8
 """
 
+Install Steps:
+
+1) yum install python-pip
+
+2) get https://raw.github.com/neelakanta/s3_bucket_to_bucket_copy_py/master/s3_bucket_to_bucket_copy.py
+
+3) chmod 755 s3_bucket_to_bucket_copy.py
+
+4) Setup ~/.s3cfg
+[default]
+access_key=
+secret_key=
+
+5) Run Copy:
+
+SRC_BUCKET=
+DST_BUCKET=
+TOP_LEVEL_FOLDERS=`s3cmd ls $SRC_BUCKET`
+
+for DIR in `$TOP_LEVEL_FOLDERS`
+ do ./s3_bucket_to_bucket_copy.py $SRC_BUCKET/$DIR/ $DST_BUCKET 
+done
+
+
 Python script to sync the contents of one S3 bucket with another S3 bucket.
 
 This script will work even if the buckets are in different regions.
@@ -63,7 +87,7 @@ class Worker(threading.Thread):
                 dist_key = self.dest_bucket.get_key(k.key)
                 #if not dist_key or not dist_key.exists() or k.etag != dist_key.etag:
                 if not dist_key or not dist_key.exists():
-                    print '  t%s: Copy: %s' % (self.thread_id, k.key)
+                    #print '  t%s: Copy: %s' % (self.thread_id, k.key)
                     self.dest_bucket.copy_key(k.key, self.src_bucket_name, k.key, preserve_acl=True, encrypt_key=True)
                     # acl = self.src_bucket.get_acl(k)
                     #self.dest_bucket.copy_key(k.key, self.src_bucket_name, k.key, storage_class=k.storage_class)
@@ -75,9 +99,9 @@ class Worker(threading.Thread):
                     #print '  t%s: Exists and etag matches: %s' % (self.thread_id, k.key)
                 self.done_count += 1
             except BaseException:
-                logging.exception('  t%s: error during copy' % self.thread_id)
+                logging.exception('%s: error during copy' % self.thread_id)
             if (self.done_count % 100 == 0):
-                    print '  t%s (%s): done=%s copied=%s exists=%s' % (self.thread_id, self.src_path, self.done_count, self.copy_count, self.exist_count)
+                    print '%s (%s): done=%s copied=%s exists=%s' % (self.thread_id, self.src_path, self.done_count, self.copy_count, self.exist_count)
             self.queue.task_done()
 
 
@@ -117,8 +141,7 @@ def copy_bucket(aws_key, aws_secret_key, src, dst):
     i = 0
 
     while True:
-        print 'Fetch next %s, backlog currently at %s, have done %s' % \
-            (max_keys, q.qsize(), i)
+        print 'm (%s): Fetch next %s, backlog currently at %s, have done %s' % (src_path, max_keys, q.qsize(), i)
         try:
             keys = src_bucket.get_all_keys(max_keys=max_keys,
                                            marker=result_marker,
@@ -128,7 +151,7 @@ def copy_bucket(aws_key, aws_secret_key, src, dst):
             for k in keys:
                 i += 1
                 q.put(k.key)
-            print 'Added %s keys to queue' % len(keys)
+            # print 'Added %s keys to queue' % len(keys)
             if len(keys) < max_keys:
                 print 'All items now in queue'
                 break
@@ -139,10 +162,10 @@ def copy_bucket(aws_key, aws_secret_key, src, dst):
             logging.exception('error during fetch, quitting')
             break
 
-    print 'Waiting for queue to be completed'
+    print 'm (%s): Waiting for queue to be completed' % (src_path)
     q.join()
     print
-    print 'Done'
+    print 'm (%s): Done' % (src_path)
     print
 
 
